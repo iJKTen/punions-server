@@ -1,0 +1,10 @@
+{
+  "name": "aws-sls-nodejs-template",
+  "description": "",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^25.4.0",
+    "serverless-pseudo-parameters": "^2.5.0"
+  }
+}
