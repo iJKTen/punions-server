@@ -13,8 +13,8 @@
 
 service: punions-server
 # app and org for use with dashboard.serverless.com
-#app: your-app-name
-#org: your-org-name
+app: punions-server
+org: ijkten
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -31,12 +31,21 @@ provider:
 #  region: us-east-1
 
 # you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#        - "dynamodb:Query"
-#        - "dynamodb:PutItem"
+iamRoleStatements:
+  - Effect: "Allow"
+    Action:
+      - dynamodb:DescribeTable
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      - dynamodb:UpdateItem
+      - dynamodb:DeleteItem
+    Resource:
+      - arn:aws:dynamodb:#{AWS::Region}:#{AWS::AccountId}:table/${self:custom.dynamodb.cardsTable}
+      - arn:aws:dynamodb:#{AWS::Region}:#{AWS::AccountId}:table/${self:custom.dynamodb.cardsTable}/index/pk
+      - arn:aws:dynamodb:#{AWS::Region}:#{AWS::AccountId}:table/${self:custom.dynamodb.gamesTable}
+      - arn:aws:dynamodb:#{AWS::Region}:#{AWS::AccountId}:table/${self:custom.dynamodb.gamesTable}/index/pk
 #      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
 #    - Effect: "Allow"
 #      Action:
@@ -51,9 +60,9 @@ provider:
 #            - "/*"
 
 # you can define service wide environment variables here
-#  environment:
-#    variable1: value1
-#    DYNAMODB_USER_TABLE: ${self:custom.dynamodb.userTable}
+environment:
+  DYNAMODB_CARDS_TABLE: ${self:custom.dynamodb.cardsTable}
+  DYNAMODB_GAMES_TABLE: ${self:custom.dynamodb.gamesTable}
 
 # you can add packaging information here
 #package:
@@ -132,22 +141,35 @@ plugins:
   - serverless-pseudo-parameters
 
 # Setup your dynamodb table
-# custom:
-#   dynamodb:
-#     userTable: ${self:service}-user-${self:provider.stage}
+custom:
+  dynamodb:
+    cardsTable: ${self:service}-cards-${self:provider.stage}
+    gamesTable: ${self:service}-games-${self:provider.stage}
 
-# resources:
-#   Resources:
-#     userTable:
-#       Type: AWS::DynamoDB::Table
-#       DeletionPolicy: Retain
-#       Properties:
-#         TableName: ${self:custom.dynamodb.userTable}
-#         AttributeDefinitions:
-#           - AttributeName: pk
-#             AttributeType: S
-#           KeySchema:
-#             - AttributeName: pk
-#               KeyType: HASH
-#           BillingMode: PAY_PER_REQUEST
+resources:
+  Resources:
+    cardsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:custom.dynamodb.cardsTable}
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    gamesTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:custom.dynamodb.gamesTable}
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
 

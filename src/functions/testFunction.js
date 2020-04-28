@@ -1,5 +1,8 @@
 'use strict';
 
+const AWS = require("aws-sdk");
+const documentClient = new AWS.DynamoDB.DocumentClient();
+
 module.exports.testFunction = async (event, context) => {
   //For a post method
   // const body = JSON.parse(event.body)
@@ -30,14 +33,21 @@ module.exports.testFunction = async (event, context) => {
   //   return new Error('There was an error putting the new item')
   // }
 
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: 'Go Serverless v1.0! Your function executed successfully!'
-    }),
-  };
+  // const response = {
+  //   statusCode: 200,
+  //   body: JSON.stringify({
+  //     message: 'Go Serverless v1.0! Your function executed successfully!'
+  //   }),
+    const data = await documentClient.scan({TableName: process.env.DYNAMODB_CARDS_TABLE}).promise();
+    const response = {
+      statusCode: 200,
+      headers: {
+          "Access-Control-Allow-Origin": "*"
+      },
+      body: JSON.stringify(data.Items)
+    };
+    return response;
 
-  return response;
   // Use this code if you don't use the http event with the LAMBDA-PROXY integration
   // return { message: 'Go Serverless v1.0! Your function executed successfully!', event };
 };
