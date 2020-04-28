@@ -25,13 +25,11 @@ provider:
   runtime: nodejs12.x
   stage: ${opt:stage, 'dev'}
   region: us-east-1
+  environment:
+    DYNAMODB_CARDS_TABLE: ${self:custom.dynamodb.cardsTable}
+    DYNAMODB_GAMES_TABLE: ${self:custom.dynamodb.gamesTable}
 
-# you can overwrite defaults here
-#  stage: dev
-#  region: us-east-1
-
-# you can add statements to the Lambda function's IAM Role here
-iamRoleStatements:
+  iamRoleStatements:
   - Effect: "Allow"
     Action:
       - dynamodb:DescribeTable
@@ -58,11 +56,6 @@ iamRoleStatements:
 #          - - "arn:aws:s3:::"
 #            - "Ref" : "ServerlessDeploymentBucket"
 #            - "/*"
-
-# you can define service wide environment variables here
-environment:
-  DYNAMODB_CARDS_TABLE: ${self:custom.dynamodb.cardsTable}
-  DYNAMODB_GAMES_TABLE: ${self:custom.dynamodb.gamesTable}
 
 # you can add packaging information here
 #package:
