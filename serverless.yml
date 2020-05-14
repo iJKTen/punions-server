@@ -67,13 +67,13 @@ provider:
 #    - exclude-me-dir/**
 
 functions:
-  testFunction:
-    handler: src/functions/testFunction.testFunction
+  game:
+    handler: src/functions/game.createGame
     events:
       - http:
-          method: get
+          method: post
           cors: true
-          path: /v1/testFunction
+          path: /v1/game/create
           # If the method is post then you can validate your schema at the API gateway level.
           # request:
           #   schema:
@@ -147,10 +147,10 @@ resources:
       Properties:
         TableName: ${self:custom.dynamodb.cardsTable}
         AttributeDefinitions:
-          - AttributeName: pk
+          - AttributeName: id
             AttributeType: S
         KeySchema:
-          - AttributeName: pk
+          - AttributeName: id
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
     gamesTable:
@@ -159,10 +159,10 @@ resources:
       Properties:
         TableName: ${self:custom.dynamodb.gamesTable}
         AttributeDefinitions:
-          - AttributeName: pk
+          - AttributeName: id
             AttributeType: S
         KeySchema:
-          - AttributeName: pk
+          - AttributeName: id
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
 
