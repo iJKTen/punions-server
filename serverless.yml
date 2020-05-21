@@ -67,6 +67,11 @@ functions:
     events:
       - websocket:
         routeKey: playerPlayedCard
+  scorePun:
+    handler: src/functions/game.scorePun
+    events:
+      - websocket:
+        routeKey: scorePun
 
 plugins:
   - serverless-pseudo-parameters

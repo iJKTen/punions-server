@@ -36,7 +36,7 @@ module.exports.sendMessage = async (event, context) => {
 
 module.exports.addPlayerToGame = async (event, context) => {
   try {
-    let {action, payload} = JSON.parse(event.body);
+    const {action, payload} = JSON.parse(event.body);
     const playerId = event.requestContext.connectionId;
     const data = await db.addPlayerToGame(payload.gameId, playerId);
     return utilities.success(data);
@@ -56,9 +56,14 @@ module.exports.playerPlayedCard = async (event, context) => {
   }
 }
 
-const scorePun   = async (event, context) => {
+module.exports.scorePun = async (event, context) => {
   try {
-
+    const {action, payload} = JSON.parse(event.body);
+    const playerId = event.requestContext.connectionId;
+    if(payload.score !== 0) {
+      const data = await db.scorePun(payload.gameId, playerId);
+      return utilities.success(data);
+    }
   } catch (err) {
     return utilities.error(err);
   }
