@@ -31,6 +31,7 @@ provider:
       - arn:aws:dynamodb:#{AWS::Region}:#{AWS::AccountId}:table/${self:custom.dynamodb.gamesTable}
       - arn:aws:dynamodb:#{AWS::Region}:#{AWS::AccountId}:table/${self:custom.dynamodb.gamesTable}/index/pk
 
+      # Websocket API deploy does not work here but leaving it in here for now if I can figure out how to do it later.
 functions:
   game:
     handler: src/functions/game.createGame
@@ -56,6 +57,16 @@ functions:
     events:
       - websocket:
         routeKey: sendMessage
+  addPlayerToGame:
+    handler: src/functions/game.addPlayerToGame
+    events:
+      - websocket:
+        routeKey: addPlayerToGame
+  playerPlayedCard:
+    handler: src/functions/game.playerPlayedCard
+    events:
+      - websocket:
+        routeKey: playerPlayedCard
 
 plugins:
   - serverless-pseudo-parameters

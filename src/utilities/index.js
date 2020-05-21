@@ -1,4 +1,4 @@
-const success = (data) => {
+const success = (data = '') => {
   return {
     statusCode: 200,
     headers: {
