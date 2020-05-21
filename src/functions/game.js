@@ -30,7 +30,6 @@ module.exports.sendMessage = async (event, context) => {
   console.log(event.body);
   console.log(event);
   console.log(context);
-  myFunctions[payload.method];
   return utilities.success(event);
 }
 
@@ -38,7 +37,25 @@ module.exports.addPlayerToGame = async (event, context) => {
   try {
     const {action, payload} = JSON.parse(event.body);
     const playerId = event.requestContext.connectionId;
-    const data = await db.addPlayerToGame(payload.gameId, playerId);
+    const data = await db.addPlayerToGame(payload.gameId, playerId, payload.name);
+
+    // Have to broadcast player ids to all the players so when they score a pun
+    // we can track who the score is for.
+
+    const apigwManagementApi = new AWS.ApiGatewayManagementApi({
+      // apiVersion: '2018-11-29',
+      endpoint: event.requestContext.domainName + '/' + event.requestContext.stage
+    });
+
+    const players = await db.players(payload.gameId);
+    const dataStr = JSON.stringify(data);
+    players.forEach((player) => {
+      let connectionId = `${player}=`
+      if(connectionId !== playerId) {
+        apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: dataStr }).promise();
+      }
+    })
+
     return utilities.success(data);
   } catch (err) {
     return utilities.error(err);
@@ -60,10 +77,11 @@ module.exports.scorePun = async (event, context) => {
   try {
     const {action, payload} = JSON.parse(event.body);
     const playerId = event.requestContext.connectionId;
-    if(payload.score !== 0) {
-      const data = await db.scorePun(payload.gameId, playerId);
-      return utilities.success(data);
+    const data = await db.scorePun(payload.gameId, playerId, payload.cardId, payload.score);
+    if(Object.keys(data.Attributes.players) === process.env.DYNAMODB_GAMES_TABLE) {
+
     }
+    return utilities.success(data);
   } catch (err) {
     return utilities.error(err);
   }

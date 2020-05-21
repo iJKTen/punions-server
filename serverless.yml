@@ -5,12 +5,13 @@ org: ijkten
 
 provider:
   name: aws
+  region: us-east-1
   runtime: nodejs12.x
   stage: ${opt:stage, 'dev'}
-  region: us-east-1
   environment:
     DYNAMODB_CARDS_TABLE: ${self:custom.dynamodb.cardsTable}
     DYNAMODB_GAMES_TABLE: ${self:custom.dynamodb.gamesTable}
+    MAX_PLAYERS_PER_GAME: 2
 
   websocketsApiName: punions-websocket-${self:provider.stage}
   websocketApiRouteSelectionExpression: $request.body.action
@@ -62,6 +63,10 @@ functions:
     events:
       - websocket:
         routeKey: addPlayerToGame
+      - Statement:
+        - Effect: Allow
+          Action:
+            - "execute-api:ManageConnections"
   playerPlayedCard:
     handler: src/functions/game.playerPlayedCard
     events:
