@@ -9,7 +9,7 @@ The connection id is saved as the player id without the '=' symbol.
 {
   "action": "addPlayerToGame",
   "payload": {
-    "gameId": "289c8701",
+    "gameId": "f3687d1f",
     "player": {
       "name": "John Doe"
     }
@@ -48,7 +48,7 @@ Broadcast the following response to all the players
 {
   "action": "playerPlayedCard",
   "payload": {
-    "gameId": "c0fe3a6b",
+    "gameId": "f3687d1f",
     "card": {
       "cardId": "2",
       "cardTitle": "test",
@@ -65,7 +65,7 @@ other players.
 {
   "action": "scorePun",
   "payload": {
-    "gameId": "c0fe3a6b",
+    "gameId": "f3687d1f",
     "scoreForPlayer": {
       "playerId": "M9lf5dmjIAMCK7g",
       "cardId": "2",
