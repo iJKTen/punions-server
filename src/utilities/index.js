@@ -2,23 +2,23 @@ const success = (data = '') => {
   return {
     statusCode: 200,
     headers: {
-        "Access-Control-Allow-Origin": "*"
+      'Access-Control-Allow-Origin': '*'
     },
     body: JSON.stringify(data)
   };
-}
+};
 
 const error = (err) => {
   return {
     statusCode: 500,
     headers: {
-        "Access-Control-Allow-Origin": "*"
+      'Access-Control-Allow-Origin': '*'
     },
-    body: JSON.stringify(err)
+    body: err
   };
-}
+};
 
 module.exports = {
-  success, 
+  success,
   error
 };

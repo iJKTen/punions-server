@@ -1,59 +1,34 @@
-const Crypto = require('crypto');
 const AWS = require("aws-sdk");
 const documentClient = new AWS.DynamoDB.DocumentClient();
 
-const createGame = async () => {
-  const gameId = Crypto.randomBytes(8).toString('hex').slice(0, 8);
-
+const createGame = async (gameId) => {
   // Add the players key when creating a new game because when it comes to adding players
   // the player id is going to be the connection id you get from the web socket. 
   const params = {
     TableName: process.env.DYNAMODB_GAMES_TABLE, 
     Item: {
-        id: gameId,
-        "players": { }
+      id: gameId,
+      "players": { }
     }
   };
 
   await documentClient.put(params).promise();
-  return {
-    gameId: gameId
-  };
+  return gameId;
 }
 
-const addPlayerToGame = async (gameId, playerId, name) => {
-  playerId = playerId.replace('=', '');
-
-  let playing = false;
-  const game = await getGame(gameId);
-  let order = Object.keys(game.Item.players).length;
-  if(order === 0) {
-    playing = true;
-  }
-  order++;
-
-  // Becuase you created a players map when creating a game you can now add a player
-  // at the path players.playerId where playerId is passed as the attribute name. 
-  // You want to create a new players.playerid if that path does not exist and player id is set in
-  // ExpressionAttributeNames.
+const addPlayerToGameTwo = async (gameId, player) => {
   const params = {
     TableName: process.env.DYNAMODB_GAMES_TABLE, 
     Key: {
         id: gameId
     },
-    UpdateExpression: 'SET #players.#playerId = if_not_exists(#players.#playerId, :player)',
+    UpdateExpression: 'SET #players.#pId = if_not_exists(#players.#pId, :player)',
     ExpressionAttributeNames: {
       '#players': 'players',
-      '#playerId': playerId
+      '#pId': player.jsonSafePlayerId()
     },
     ExpressionAttributeValues: {
-      ':player': {
-        "name": name,
-        "cards": {},
-        "score": 0,
-        "playing": playing,
-        "order": order
-      }
+      ':player': player.toJson()
     },
     ReturnValues: "ALL_NEW"
   };
@@ -61,8 +36,7 @@ const addPlayerToGame = async (gameId, playerId, name) => {
   return await documentClient.update(params).promise();
 }
 
-const playerPlayedCard = async (gameId, playerId, cardId, cardTitle, pun) => {
-  playerId = playerId.replace('=', '');
+const playerPlayedCard = async (gameId, playerId, card) => {
   const params = {
     TableName: process.env.DYNAMODB_GAMES_TABLE, 
     Key: {
@@ -73,12 +47,12 @@ const playerPlayedCard = async (gameId, playerId, cardId, cardTitle, pun) => {
       '#players': 'players',
       '#pId': playerId,
       '#cards': 'cards',
-      '#cid': cardId
+      '#cid': card.cardId
     },
     ExpressionAttributeValues: {
       ':card': {
-        "cardTitle": cardTitle,
-        "pun": pun,
+        "cardTitle": card.cardTitle,
+        "pun": card.pun,
         "totalPlayersScored": 0
       }
     },
@@ -87,37 +61,21 @@ const playerPlayedCard = async (gameId, playerId, cardId, cardTitle, pun) => {
   return await documentClient.update(params).promise();
 }
 
-const scorePun = async (gameId, playerId, cardId, score) => {
-  playerId = playerId.replace('=', '');
+const scorePun = async (gameId, scoreForPlayer, nextPlayerIdToPlay) => {
 
   let expressionAttributeNames = {
-    '#pId': playerId,
-      '#s': 'score',
-      '#c': 'cards',
-      '#cId': cardId,
-      '#t': 'totalPlayersScored'
+    '#pId': scoreForPlayer.playerId,
+    '#s': 'score',
+    '#c': 'cards',
+    '#cId': scoreForPlayer.cardId,
+    '#t': 'totalPlayersScored'
   }
+
   let updateExpression = 'set players.#pId.#s = players.#pId.#s + :score, players.#pId.#c.#cId.#t = players.#pId.#c.#cId.#t + :one';
 
-  const game = await getGame(gameId);
-  if(game.Item.players[playerId].cards[cardId].totalPlayersScored === process.env.MAX_PLAYERS_PER_GAME - 1) {
-    updateExpression = 'set players.#pId.#s = players.#pId.#s + :score, players.#pId.#c.#cId.#t = players.#pId.#c.#cId.#t + :one, players.#pId.playing = false';
-
-    //Find the next player
-    const players = Object.keys(game.Item.players);
-    let nextPlayerOrder = game.Item.players[playerId].order + 1;
-    players.forEach((p) => {
-      if(process.env.MAX_PLAYERS_PER_GAME + 1 === nextPlayerOrder) {
-        nextPlayerOrder = 0;
-      }
-      console.log(p, nextPlayerOrder, game.Item.players[p].order)
-      if(game.Item.players[p].order === nextPlayerOrder) {
-        updateExpression = 'set players.#pId.#s = players.#pId.#s + :score, players.#pId.#c.#cId.#t = players.#pId.#c.#cId.#t + :one, players.#pId.playing = false, players.#nextPId.playing = true';
-        expressionAttributeNames['#nextPId'] = p;
-      }
-    });
-    console.log(updateExpression);
-    console.log(expressionAttributeNames);
+  if(nextPlayerIdToPlay.length > 0) {
+    updateExpression = updateExpression.concat(', players.#pId.playing = :f, players.#nextPId.playing = :t');
+    expressionAttributeNames['#nextPId'] = nextPlayerIdToPlay;
   }
 
   const params = {
@@ -128,8 +86,10 @@ const scorePun = async (gameId, playerId, cardId, score) => {
     UpdateExpression: updateExpression,
     ExpressionAttributeNames: expressionAttributeNames,
     ExpressionAttributeValues: {
-      ':score': score,
-      ':one': 1
+      ':score': scoreForPlayer.score,
+      ':one': 1,
+      ':f': false,
+      ':t': true
     },
     ReturnValues: "ALL_NEW"
   };
@@ -146,15 +106,10 @@ const getGame = async (gameId) => {
   return await documentClient.get(params).promise();
 }
 
-const players = async (gameId) => {
-  const game = await getGame(gameId);
-  return Object.keys(game.Item.players);
-}
-
 module.exports = {
   createGame, 
-  addPlayerToGame,
+  getGame,
+  addPlayerToGameTwo,
   playerPlayedCard,
-  scorePun,
-  players
+  scorePun
 };

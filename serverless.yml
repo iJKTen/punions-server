@@ -48,16 +48,13 @@ functions:
         routeKey: $connect
       - websocket:
         routeKey: $default
+      - websocket:
+        routeKey: sendMessage
   playerLeftGame:
     handler: src/functions/game.playerLeftGame
     events:
       - websocket:
         routeKey: $disconnect
-  sendMessage:
-    handler: src/functions/game.sendMessage
-    events:
-      - websocket:
-        routeKey: sendMessage
   addPlayerToGame:
     handler: src/functions/game.addPlayerToGame
     events:

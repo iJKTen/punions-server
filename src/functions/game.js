@@ -2,59 +2,26 @@
 const AWS = require("aws-sdk");
 const db = require('../db/game');
 const utilities = require('../utilities/index');
+const { Game } = require('../api/Game');
+const { Player } = require('../api/Player');
 
 module.exports.createGame = async (event, context) => {
   try {
-    const data = await db.createGame();
-    return utilities.success(data);
+    const game = await Game.create();
+    return utilities.success(game.toJson());
   } catch (err) {
     return utilities.error(err);
   }
 };
 
-module.exports.playerLeftGame = async (event, context) => {
-  return utilities.success('player left game');
-}
-
-module.exports.sendMessage = async (event, context) => {
-
-  // Add player to Game: gameId, connectionId, playerName
-  // playerPlayedCard: gameId, connectionId, cardId, cardTitle, pun
-  // scorePun: gameId, connectionId, cardId, currentPlayer, score
-
-  //event.requestContext.routeKey === "sendMessage"
-  //event.requestContext.connectionId
-  let {action, payload} = JSON.parse(event.body);
-  console.log(action);
-  console.log(payload.method);
-  console.log(event.body);
-  console.log(event);
-  console.log(context);
-  return utilities.success(event);
-}
-
 module.exports.addPlayerToGame = async (event, context) => {
   try {
     const {action, payload} = JSON.parse(event.body);
-    const playerId = event.requestContext.connectionId;
-    const data = await db.addPlayerToGame(payload.gameId, playerId, payload.name);
+    const player = new Player(event.requestContext.connectionId, payload.player)
+    const game = new Game(payload.gameId);
+    const data = await game.addPlayer(player);
 
-    // Have to broadcast player ids to all the players so when they score a pun
-    // we can track who the score is for.
-
-    const apigwManagementApi = new AWS.ApiGatewayManagementApi({
-      // apiVersion: '2018-11-29',
-      endpoint: event.requestContext.domainName + '/' + event.requestContext.stage
-    });
-
-    const players = await db.players(payload.gameId);
-    const dataStr = JSON.stringify(data);
-    players.forEach((player) => {
-      let connectionId = `${player}=`
-      if(connectionId !== playerId) {
-        apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: dataStr }).promise();
-      }
-    })
+    await broadcastToAllPlayers(event, data);
 
     return utilities.success(data);
   } catch (err) {
@@ -65,8 +32,9 @@ module.exports.addPlayerToGame = async (event, context) => {
 module.exports.playerPlayedCard = async (event, context) => {
   try {
     const {action, payload} = JSON.parse(event.body);
-    const playerId = event.requestContext.connectionId;
-    const data = await db.playerPlayedCard(payload.gameId, playerId, payload.cardId, payload.cardTitle, payload.pun);
+    const player = new Player(event.requestContext.connectionId);
+    const data = await player.madeMove(payload.gameId, payload.card);
+
     return utilities.success(data);
   } catch (err) {
     return utilities.error(err);
@@ -76,13 +44,35 @@ module.exports.playerPlayedCard = async (event, context) => {
 module.exports.scorePun = async (event, context) => {
   try {
     const {action, payload} = JSON.parse(event.body);
-    const playerId = event.requestContext.connectionId;
-    const data = await db.scorePun(payload.gameId, playerId, payload.cardId, payload.score);
-    if(Object.keys(data.Attributes.players) === process.env.DYNAMODB_GAMES_TABLE) {
-
-    }
+    const player = new Player(event.requestContext.connectionId);
+    const data = await player.scorePun(payload.gameId, payload.scoreForPlayer);
+    
     return utilities.success(data);
   } catch (err) {
     return utilities.error(err);
   }
+}
+
+module.exports.playerLeftGame = async (event, context) => {
+  return utilities.success('player left game');
+}
+
+const broadcastToAllPlayers = async (event, payload) => {
+  const players = Object.keys(payload.Attributes.players);
+  let cPlayerId = event.requestContext.connectionId.replace('=', '');
+  players.splice(players.indexOf(cPlayerId), 1);
+
+  const apigwManagementApi = new AWS.ApiGatewayManagementApi({
+    endpoint: event.requestContext.domainName + '/' + event.requestContext.stage
+  });
+
+  const promises = players.map((pId) => {
+    const connectionId = `${pId}=`;
+    return apigwManagementApi.postToConnection({ 
+      ConnectionId: connectionId, 
+      Data: JSON.stringify(payload)
+    }).promise();
+  })
+
+  await Promise.all(promises);
 }
