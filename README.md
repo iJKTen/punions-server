@@ -17,7 +17,7 @@ The connection id is saved as the player id without the '=' symbol.
 }
 ```
 ### Response 
-Updated players are broadcast to all the players in the game.
+Broadcast the following response to all the players
 
 ```
 {
