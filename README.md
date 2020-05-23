@@ -33,7 +33,7 @@ The connection id is saved as the player id without the '=' symbol.
 ```
 
 ### Submit Score
-In the object below player id is the player who submitted his/her pun and this message is sent by the
+In the object below, player id is the player who submitted her/his pun and this message is sent by the
 other players.
 ```
 {
