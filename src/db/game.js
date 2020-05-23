@@ -17,53 +17,42 @@ const createGame = async (gameId) => {
 }
 
 const addPlayerToGameTwo = async (gameId, player) => {
-  const params = {
-    TableName: process.env.DYNAMODB_GAMES_TABLE, 
-    Key: {
-        id: gameId
-    },
-    UpdateExpression: 'SET #players.#pId = if_not_exists(#players.#pId, :player)',
-    ExpressionAttributeNames: {
-      '#players': 'players',
-      '#pId': player.jsonSafePlayerId()
-    },
-    ExpressionAttributeValues: {
-      ':player': player.toJson()
-    },
-    ReturnValues: "ALL_NEW"
+
+  const expression = 'SET #players.#pId = if_not_exists(#players.#pId, :player)';
+  const attributeNames = {
+    '#players': 'players',
+    '#pId': player.jsonSafePlayerId()
+  };
+  const values = {
+    ':player': player.toJson()
   };
 
-  return await documentClient.update(params).promise();
+  return await updateGame(gameId, expression, attributeNames, values);
 }
 
 const playerPlayedCard = async (gameId, playerId, card) => {
-  const params = {
-    TableName: process.env.DYNAMODB_GAMES_TABLE, 
-    Key: {
-        id: gameId
-    },
-    UpdateExpression: 'set #players.#pId.#cards.#cid = if_not_exists(#players.#pId.#cards.#cid, :card)',
-    ExpressionAttributeNames: {
-      '#players': 'players',
-      '#pId': playerId,
-      '#cards': 'cards',
-      '#cid': card.cardId
-    },
-    ExpressionAttributeValues: {
-      ':card': {
-        "cardTitle": card.cardTitle,
-        "pun": card.pun,
-        "totalPlayersScored": 0
-      }
-    },
-    ReturnValues: "ALL_NEW"
+
+  const expression = 'set #players.#pId.#cards.#cid = if_not_exists(#players.#pId.#cards.#cid, :card)';
+  const attributeNames = {
+    '#players': 'players',
+    '#pId': playerId,
+    '#cards': 'cards',
+    '#cid': card.cardId
   };
-  return await documentClient.update(params).promise();
+  const values = {
+    ':card': {
+      "cardTitle": card.cardTitle,
+      "pun": card.pun,
+      "totalPlayersScored": 0
+    }
+  };
+
+  return await updateGame(gameId, expression, attributeNames, values);
 }
 
 const scorePun = async (gameId, scoreForPlayer, nextPlayerIdToPlay) => {
 
-  let expressionAttributeNames = {
+  let attributeNames = {
     '#pId': scoreForPlayer.playerId,
     '#s': 'score',
     '#c': 'cards',
@@ -71,29 +60,21 @@ const scorePun = async (gameId, scoreForPlayer, nextPlayerIdToPlay) => {
     '#t': 'totalPlayersScored'
   }
 
-  let updateExpression = 'set players.#pId.#s = players.#pId.#s + :score, players.#pId.#c.#cId.#t = players.#pId.#c.#cId.#t + :one';
+  let values = {
+    ':score': scoreForPlayer.score,
+    ':one': 1,
+    ':f': false,
+    ':t': true
+  };
+
+  let expression = 'set players.#pId.#s = players.#pId.#s + :score, players.#pId.#c.#cId.#t = players.#pId.#c.#cId.#t + :one';
 
   if(nextPlayerIdToPlay.length > 0) {
-    updateExpression = updateExpression.concat(', players.#pId.playing = :f, players.#nextPId.playing = :t');
-    expressionAttributeNames['#nextPId'] = nextPlayerIdToPlay;
+    expression = expression.concat(', players.#pId.playing = :f, players.#nextPId.playing = :t');
+    attributeNames['#nextPId'] = nextPlayerIdToPlay;
   }
 
-  const params = {
-    TableName: process.env.DYNAMODB_GAMES_TABLE,
-    Key: {
-        id: gameId
-    },
-    UpdateExpression: updateExpression,
-    ExpressionAttributeNames: expressionAttributeNames,
-    ExpressionAttributeValues: {
-      ':score': scoreForPlayer.score,
-      ':one': 1,
-      ':f': false,
-      ':t': true
-    },
-    ReturnValues: "ALL_NEW"
-  };
-  return await documentClient.update(params).promise();
+  return await updateGame(gameId, expression, attributeNames, values);
 }
 
 const getGame = async (gameId) => {
@@ -104,6 +85,21 @@ const getGame = async (gameId) => {
     }
   };
   return await documentClient.get(params).promise();
+}
+
+const updateGame =  async (gameId, expression, names, values) => {
+  const params = {
+    TableName: process.env.DYNAMODB_GAMES_TABLE,
+    Key: {
+        id: gameId
+    },
+    UpdateExpression: expression,
+    ExpressionAttributeNames: names,
+    ExpressionAttributeValues: values,
+    ReturnValues: "ALL_NEW"
+  };
+
+  return await documentClient.update(params).promise();
 }
 
 module.exports = {
