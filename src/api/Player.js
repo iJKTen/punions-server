@@ -20,17 +20,17 @@ class Player {
     let nextPlayerIdToPlay = '';
     const totalScores = game.Item.players[payload.playerId].cards[payload.cardId].totalPlayersScored + 1;
 
-    if(totalScores === process.env.MAX_PLAYERS_PER_GAME - 1) {
+    if (totalScores === process.env.MAX_PLAYERS_PER_GAME - 1) {
       const players = Object.keys(game.Item.players);
       let nextPlayerOrder = game.Item.players[payload.playerId].order + 1;
 
-      if(nextPlayerOrder > process.env.MAX_PLAYERS_PER_GAME) {
+      if (nextPlayerOrder > process.env.MAX_PLAYERS_PER_GAME) {
         nextPlayerOrder = 1;
       }
 
-      for(let index = 0; index < players.length; index++) {
-        let playerId = players[index];
-        if(game.Item.players[playerId].order === nextPlayerOrder) {
+      for (let index = 0; index < players.length; index++) {
+        const playerId = players[index];
+        if (game.Item.players[playerId].order === nextPlayerOrder) {
           nextPlayerIdToPlay = playerId;
           break;
         }

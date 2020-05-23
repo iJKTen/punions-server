@@ -1,3 +1,4 @@
+/* eslint-disable require-jsdoc */
 const Crypto = require('crypto');
 const DB = require('../db/game');
 
@@ -22,7 +23,7 @@ class Game {
   toJson() {
     return {
       gameId: this.gameId
-    }
+    };
   }
 }
 

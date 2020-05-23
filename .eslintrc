@@ -1,9 +1,9 @@
 {
   "extends": ["eslint:recommended", "google"],
   "env": {
-    "jest": true,
     "node": true,
-    "es6": true
+    "es6": true,
+    "es2020": true
   },
   "rules": {
     "comma-dangle": ["error", "never"],
