@@ -1,6 +1,7 @@
 /* eslint-disable require-jsdoc */
 const Crypto = require('crypto');
 const DB = require('../db/game');
+const {Card} = require('./Card');
 
 class Game {
   constructor(gameId) {
@@ -18,6 +19,26 @@ class Game {
     player.order = Object.keys(game.Item.players).length + 1;
     player.playing = (player.order === 1) ? true : false;
     return await DB.addPlayerToGame(this.gameId, player);
+  }
+
+  async getUnplayedCard(playerId) {
+    const game = await DB.getGame(this.gameId);
+    const cards = await Card.getAllCards();
+
+    if (game.Item.players[playerId] && game.Item.players[playerId].cards) {
+      const playedCards = Object.keys(game.Item.players[playerId].cards);
+
+      if (playedCards.length > 0) {
+        const unplayedCards = cards.Items.filter((card) => {
+          if (playedCards.includes(card.id)) {
+            return card.id;
+          }
+        });
+        return unplayedCards.length > 0 ? unplayedCards[0] : null;
+      }
+    }
+
+    return cards.Items[0];
   }
 
   toJson() {

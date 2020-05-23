@@ -5,4 +5,6 @@ const getAllCards = async () => {
   return await documentClient.scan({TableName: process.env.DYNAMODB_CARDS_TABLE}).promise();
 };
 
-module.exports = getAllCards;
+module.exports = {
+  getAllCards
+};

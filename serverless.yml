@@ -64,6 +64,11 @@ functions:
         - Effect: Allow
           Action:
             - "execute-api:ManageConnections"
+  unplayedCard:
+    handler: src/functions/game.unplayedCard
+    events:
+      - websocket:
+        routeKey: unplayedCard
   playerPlayedCard:
     handler: src/functions/game.playerPlayedCard
     events:
