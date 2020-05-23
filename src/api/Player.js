@@ -1,4 +1,5 @@
 const DB = require('../db/game');
+const {safeConnectionId} = require('../utilities/index');
 
 /* eslint-disable require-jsdoc */
 class Player {
@@ -41,7 +42,8 @@ class Player {
   }
 
   jsonSafePlayerId() {
-    return this.playerId.replace('=', '');
+    // return this.playerId.replace('=', '');
+    return safeConnectionId(this.playerId);
   }
 
   toJson() {

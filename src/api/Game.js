@@ -17,7 +17,7 @@ class Game {
     const game = await DB.getGame(this.gameId);
     player.order = Object.keys(game.Item.players).length + 1;
     player.playing = (player.order === 1) ? true : false;
-    return await DB.addPlayerToGameTwo(this.gameId, player);
+    return await DB.addPlayerToGame(this.gameId, player);
   }
 
   toJson() {

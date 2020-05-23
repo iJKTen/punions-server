@@ -59,7 +59,7 @@ module.exports.playerLeftGame = async (event, context) => {
 
 const broadcastToAllPlayers = async (event, payload) => {
   const players = Object.keys(payload.Attributes.players);
-  const currentPlayer = event.requestContext.connectionId.replace('=', '');
+  const currentPlayer = utilities.safeConnectionId(event.requestContext.connectionId);
   players.splice(players.indexOf(currentPlayer), 1);
 
   const apigwManagementApi = new AWS.ApiGatewayManagementApi({
@@ -67,9 +67,8 @@ const broadcastToAllPlayers = async (event, payload) => {
   });
 
   const promises = players.map((playerId) => {
-    const connectionId = `${playerId}=`;
     return apigwManagementApi.postToConnection({
-      ConnectionId: connectionId,
+      ConnectionId: utilities.unsafeConnectionId(playerId),
       Data: JSON.stringify(payload)
     }).promise();
   });

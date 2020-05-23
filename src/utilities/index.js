@@ -18,7 +18,17 @@ const error = (err) => {
   };
 };
 
+const safeConnectionId = (connectionId) => {
+  return connectionId.replace('=', '');
+};
+
+const unsafeConnectionId = (connectionId) => {
+  return connectionId.concat('=');
+};
+
 module.exports = {
   success,
-  error
+  error,
+  safeConnectionId,
+  unsafeConnectionId
 };

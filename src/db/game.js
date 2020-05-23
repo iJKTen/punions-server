@@ -2,8 +2,6 @@ const AWS = require('aws-sdk');
 const documentClient = new AWS.DynamoDB.DocumentClient();
 
 const createGame = async (gameId) => {
-  // Add the players key when creating a new game because when it comes to adding players
-  // the player id is going to be the connection id you get from the web socket. 
   const params = {
     TableName: process.env.DYNAMODB_GAMES_TABLE,
     Item: {
@@ -16,10 +14,10 @@ const createGame = async (gameId) => {
   return gameId;
 };
 
-const addPlayerToGameTwo = async (gameId, player) => {
-  const expression = 'SET #players.#pId = if_not_exists(#players.#pId, :player)';
+const addPlayerToGame = async (gameId, player) => {
+  const expression = 'SET #p.#pId = if_not_exists(#p.#pId, :player)';
   const attributeNames = {
-    '#players': 'players',
+    '#p': 'players',
     '#pId': player.jsonSafePlayerId()
   };
   const values = {
@@ -30,9 +28,9 @@ const addPlayerToGameTwo = async (gameId, player) => {
 };
 
 const playerPlayedCard = async (gameId, playerId, card) => {
-  const expression = 'set #players.#pId.#cards.#cid = if_not_exists(#players.#pId.#cards.#cid, :card)';
+  const expression = 'set #p.#pId.#cards.#cid = if_not_exists(#p.#pId.#cards.#cid, :card)';
   const attributeNames = {
-    '#players': 'players',
+    '#p': 'players',
     '#pId': playerId,
     '#cards': 'cards',
     '#cid': card.cardId
@@ -49,8 +47,8 @@ const playerPlayedCard = async (gameId, playerId, card) => {
 };
 
 const scorePun = async (gameId, scoreForPlayer, nextPlayerIdToPlay) => {
-
   const attributeNames = {
+    '#p': 'players',
     '#pId': scoreForPlayer.playerId,
     '#s': 'score',
     '#c': 'cards',
@@ -60,16 +58,16 @@ const scorePun = async (gameId, scoreForPlayer, nextPlayerIdToPlay) => {
 
   const values = {
     ':score': scoreForPlayer.score,
-    ':one': 1,
-    ':f': false,
-    ':t': true
+    ':one': 1
   };
 
-  let expression = 'set players.#pId.#s = players.#pId.#s + :score, players.#pId.#c.#cId.#t = players.#pId.#c.#cId.#t + :one';
+  let expression = 'set #p.#pId.#s = #p.#pId.#s + :score, #p.#pId.#c.#cId.#t = #p.#pId.#c.#cId.#t + :one';
 
   if (nextPlayerIdToPlay.length > 0) {
-    expression = expression.concat(', players.#pId.playing = :f, players.#nextPId.playing = :t');
+    expression = expression.concat(', #p.#pId.playing = :f, #p.#nextPId.playing = :t');
     attributeNames['#nextPId'] = nextPlayerIdToPlay;
+    values[':f'] = false;
+    values[':t'] = true;
   }
 
   return await updateGame(gameId, expression, attributeNames, values);
@@ -104,7 +102,7 @@ const updateGame = async (gameId, expression, names, values) => {
 module.exports = {
   createGame,
   getGame,
-  addPlayerToGameTwo,
+  addPlayerToGame,
   playerPlayedCard,
   scorePun
 };
