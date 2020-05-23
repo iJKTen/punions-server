@@ -16,6 +16,32 @@ The connection id is saved as the player id without the '=' symbol.
   }
 }
 ```
+### Response 
+Updated players are broadcast to all the players in the game.
+
+```
+{
+  "Attributes": {
+    "id": "f3687d1f",
+    "players": {
+      "M9w-OeF-IAMCIfg": {
+        "name": "Jane Doe",
+        "score": 0,
+        "playing": false,
+        "cards": {},
+        "order": 2
+      },
+      "M9w8BfL2IAMCFWw": {
+        "name": "John Doe",
+        "score": 0,
+        "playing": true,
+        "cards": {},
+        "order": 1
+      }
+    }
+  }
+}
+```
 
 ### Player played card
 ```
