@@ -4,6 +4,24 @@
 ## WebSocket Messages
 The connection id is saved as the player id without the '=' symbol.
 
+### Get an unplayed card
+```
+{
+  "action": "unplayedCard",
+  "payload": {
+    "gameId": "170303f1"
+  }
+}
+```
+
+### Response
+```
+{
+  "id": "2",
+  "title": "Carrot"
+}
+```
+
 ### Add Player to Game
 ```
 {
