@@ -18,8 +18,7 @@ module.exports.unplayedCard = async (event, context) => {
   try {
     const payload = JSON.parse(event.body).payload;
     const game = new Game(payload.gameId);
-    const playerId = utilities.safeConnectionId(event.requestContext.connectionId);
-    const data = await game.getUnplayedCard(playerId);
+    const data = await game.getUnplayedCard();
 
     return utilities.success(data);
   } catch (err) {

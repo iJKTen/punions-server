@@ -21,21 +21,23 @@ class Game {
     return await DB.addPlayerToGame(this.gameId, player);
   }
 
-  async getUnplayedCard(playerId) {
+  async getUnplayedCard() {
     const game = await DB.getGame(this.gameId);
     const cards = await Card.getAllCards();
+    const playedCards = [];
+    const players = Object.keys(game.Item.players);
 
-    if (game.Item.players[playerId] && game.Item.players[playerId].cards) {
-      const playedCards = Object.keys(game.Item.players[playerId].cards);
+    players.forEach((playerId) => {
+      Array.prototype.push.apply(playedCards, Object.keys(game.Item.players[playerId].cards));
+    });
 
-      if (playedCards.length > 0) {
-        const unplayedCards = cards.Items.filter((card) => {
-          if (playedCards.includes(card.id)) {
-            return card.id;
-          }
-        });
-        return unplayedCards.length > 0 ? unplayedCards[0] : null;
-      }
+    if (playedCards.length > 0) {
+      const unplayedCards = cards.Items.filter((card) => {
+        if (playedCards.includes(card.id)) {
+          return card.id;
+        }
+      });
+      return unplayedCards.length > 0 ? unplayedCards[0] : null;
     }
 
     return cards.Items[0];
