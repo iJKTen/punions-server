@@ -2,8 +2,8 @@
 
 const AWS = require('aws-sdk');
 const utilities = require('../utilities/index');
-const {Game} = require('../api/Game');
-const {Player} = require('../api/Player');
+const { Game } = require('../api/Game');
+const { Player } = require('../api/Player');
 
 module.exports.createGame = async (event, context) => {
   try {
@@ -19,6 +19,7 @@ module.exports.unplayedCard = async (event, context) => {
     const payload = JSON.parse(event.body).payload;
     const game = new Game(payload.gameId);
     const data = await game.getUnplayedCard();
+    data.action = 'unplayedCard';
 
     return utilities.success(data);
   } catch (err) {
@@ -32,6 +33,7 @@ module.exports.addPlayerToGame = async (event, context) => {
     const player = new Player(event.requestContext.connectionId, payload.player);
     const game = new Game(payload.gameId);
     const data = await game.addPlayer(player);
+    data.action = 'playerAdded';
 
     await broadcastToAllPlayers(event, data);
 
@@ -46,6 +48,7 @@ module.exports.playerPlayedCard = async (event, context) => {
     const payload = JSON.parse(event.body).payload;
     const player = new Player(event.requestContext.connectionId);
     const data = await player.madeMove(payload.gameId, payload.card);
+    data.action = 'playerPlayedCard';
 
     return utilities.success(data);
   } catch (err) {
@@ -58,6 +61,7 @@ module.exports.scorePun = async (event, context) => {
     const payload = JSON.parse(event.body).payload;
     const player = new Player(event.requestContext.connectionId);
     const data = await player.scorePun(payload.gameId, payload.scoreForPlayer);
+    data.action = 'scorePun';
 
     return utilities.success(data);
   } catch (err) {
@@ -66,6 +70,7 @@ module.exports.scorePun = async (event, context) => {
 };
 
 module.exports.playerLeftGame = async (event, context) => {
+  console.log('player left game', event);
   return utilities.success('player left game');
 };
 
@@ -77,7 +82,7 @@ const broadcastToAllPlayers = async (event, payload) => {
   const apigwManagementApi = new AWS.ApiGatewayManagementApi({
     endpoint: `${event.requestContext.domainName}/${event.requestContext.stage}`
   });
-
+  console.log('payload', payload);
   const promises = players.map((playerId) => {
     return apigwManagementApi.postToConnection({
       ConnectionId: utilities.unsafeConnectionId(playerId),
@@ -85,5 +90,8 @@ const broadcastToAllPlayers = async (event, payload) => {
     }).promise();
   });
 
-  await Promise.all(promises);
+  await Promise.all(promises)
+    .catch(function (err) {
+      console.log('promise error', err);
+    });
 };
