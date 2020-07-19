@@ -57,7 +57,8 @@ Broadcast the following response to all the players
         "order": 1
       }
     }
-  }
+  },
+  "action": "playerAdded"
 }
 ```
 
